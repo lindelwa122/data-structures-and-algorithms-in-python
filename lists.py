@@ -44,13 +44,7 @@ class NodeList:
 
     def __repr__(self):
         nodes = self._get_nodes()
-        repr = '['
-        for i, node in enumerate(nodes):
-            if i != len(self) - 1:
-                repr += f'{node.get_value()}, '
-            else:
-                repr += f'{node.get_value()}'
-        return repr + ']'
+        return '[' + ', '.join([f'{n.get_value()}' for n in nodes]) + ']'
 
     def __len__(self):
         count, node = 0, self._root
