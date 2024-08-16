@@ -1,8 +1,7 @@
 from . import error_handlers
-from . import collections
 
 class Validator:
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         self._instance = instance
         self._key = key
         self._value = value
@@ -11,7 +10,7 @@ class Validator:
         pass
 
 class UniqueConstraintValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -21,7 +20,7 @@ class UniqueConstraintValidator(Validator):
                 raise error_handlers.NonUniqueValueError(self._key, self._value, None)
 
 class PrimaryKeyValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -32,7 +31,7 @@ class PrimaryKeyValidator(Validator):
             raise error_handlers.PrimaryKeyError()
 
 class NullConstraintValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -41,7 +40,7 @@ class NullConstraintValidator(Validator):
                 raise ValueError(f'{self._key} is not supposed to be None')
 
 class ChoicesValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -50,7 +49,7 @@ class ChoicesValidator(Validator):
             raise ValueError(f'{self._key} contains a value not in choices\nchoices: {choices}')
 
 class MaxLengthValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -59,7 +58,7 @@ class MaxLengthValidator(Validator):
             raise ValueError(f'the value of {self._key} ({self._value}) exceeds the specified length of {max_length}')
 
 class MaxValueValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -68,7 +67,7 @@ class MaxValueValidator(Validator):
             raise ValueError(f'the value of {self._key} is bigger than the specified {max}')
 
 class RequiredConstraintValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str=None, value: str=None, *, data: dict):
+    def __init__(self, instance, key: str=None, value: str=None, *, data: dict):
         super().__init__(instance, key, value)
         self._data = data
 
@@ -78,7 +77,7 @@ class RequiredConstraintValidator(Validator):
                 raise error_handlers.RequiredKeyError(key)
 
 class MinValueValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -87,7 +86,7 @@ class MinValueValidator(Validator):
             raise ValueError(f'the value of {self._key} is smaller than the specified {min}')
 
 class DataTypeValidator(Validator):
-    def __init__(self, instance: collections.Collection, key: str, value: str):
+    def __init__(self, instance, key: str, value: str):
         super().__init__(instance, key, value)
 
     def validate(self):
@@ -100,7 +99,21 @@ class ModelValidator:
         self._model = model
 
     def validator(self):
+        has_primary_key = False
         for val in self._model.values():
             if 'primary_key' in val:
-                return self._model
-            raise ValueError('model doesn\'t have a primary key')
+                has_primary_key = True
+            if 'foreign_key' in val and 'key' not in val:
+                raise ValueError('a field with foreign_key must have a key')
+            
+        if has_primary_key: return self._model
+        else: raise ValueError('model doesn\'t have a primary key')
+
+class ForeignKeyValidator(Validator):
+    def __init__(self, instance, key: str, value: str):
+        super().__init__(instance, key, value)
+
+    def validate(self):
+        key = self._instance._model[self._key]['key']
+        if key not in self._value._model:
+            raise error_handlers.ForeignKeyError(key, self._key)

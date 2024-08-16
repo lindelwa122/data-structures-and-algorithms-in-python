@@ -17,3 +17,8 @@ class KeyError(ValueError):
     def __init__(self, key: str):
         msg = f'the field: {key} is not in the class model'
         super().__init__(msg)
+
+class ForeignKeyError(ValueError):
+    def __init__(self, key: str, field: str):
+        msg = f'the key ({key}) is not in {field}'
+        super().__init__(msg)
